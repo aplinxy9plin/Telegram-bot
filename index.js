@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
  
-const token = '';
+const token = '378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk';
  
 const bot = new TelegramBot(token, {polling: true});
  
@@ -152,7 +152,7 @@ bot.on('callback_query', function (msg) {
 
 bot.on('message', (msg) => {
   chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id; // Если сообщение отправлял пользователь, то свойство msg.chat.id, если же он кликал на кнопку, то msg.from.id
-  var status = con.query("SELECT status, price, place, coffee, time FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
+  var status = con.query("SELECT status, price, place, coffee, time, id FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
     if(result[0] !== undefined){
       if(result[0].status == 2){
         bot.sendMessage(chat, "Ваш номер: "+msg.text+"?", yesNo);
@@ -164,12 +164,14 @@ bot.on('message', (msg) => {
       }
       if(result[0].status == 5){
         console.log(result);
-        bot.sendMessage(chat, "Ваш заказ: "+result[0].coffee+" На общую сумму: "+result[0].price+"\nЗабирать по адресу: "+result[0].place+"\nВ "+result[0].time+".\nВсе верно?", yesNo);
-        var sql = "UPDATE coffee SET status = 6 WHERE chat_id = "+chat+"";
+        var sql = "UPDATE coffee SET time = '"+msg.text+"', status = 6 WHERE chat_id = "+chat+"";
         con.query(sql, function (err, result) {
           if (err) throw err;
           console.log(result.affectedRows + " record(s) updated");
         });
+        bot.sendMessage(chat, "Ваш заказ: "+result[0].coffee+" На общую сумму: "+result[0].price+"\nЗабирать по адресу: "+result[0].place+"\nВ "+msg.text+".\nВсе верно?", yesNo);
+        bot.sendMessage('269874948', "Заказ #"+result[0].id+": "+result[0].coffee+" На общую сумму: "+result[0].price+"\nАдрес: "+result[0].place+"\nВ "+msg.text+".");
+        //Admin id = 269874948
       }
     }
   });
