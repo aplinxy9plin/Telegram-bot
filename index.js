@@ -1,29 +1,47 @@
 const TelegramBot = require('node-telegram-bot-api');
  
-// replace the value below with the Telegram token you receive from @BotFather
-const token = '';
+const token = '378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk';
  
-// Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
  
-// Matches "/echo [whatever]"
-bot.onText(/\/echo (.+)/, (msg, match) => {
-  // 'msg' is the received Message from Telegram
-  // 'match' is the result of executing the regexp above on the text content
-  // of the message
- 
-  const chatId = msg.chat.id;
-  const resp = match[1]; // the captured "whatever"
- 
-  // send back the matched "whatever" to the chat
-  bot.sendMessage(chatId, resp);
+var mysql = require('mysql');
+
+var status = 0;
+global.status = status;
+
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "top4ek",
+  password: "q2w3e4r5",
+  database: "shop"
 });
- 
-// Listen for any kind of message. There are different kinds of
-// messages.
+
+con.connect(function(err) {
+  if (err) throw err;
+  con.query("SELECT * FROM products", function (err, result, fields) {
+    if (err) throw err;
+    global.status = result[1].count;
+    console.log(result[0].barcode);
+  });
+});
+
+bot.onText(/\qwe/, (msg, match) => {
+
+  const chatId = msg.chat.id;
+  const resp = 'match[1]';
+  console.log(global.status); 
+  bot.sendMessage(chatId, global.status);
+});
+
+bot.onText(/\/start/, (msg) => {
+
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, 'Hello');
+});
+/*
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
  
-  // send a message to the chat acknowledging receipt of their message
   bot.sendMessage(chatId, 'Received your message');
 });
+*/
