@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
  
-const token = '378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk';
+const token = '';
  
 const bot = new TelegramBot(token, {polling: true});
  
@@ -27,9 +27,9 @@ con.connect(function(err) {
 var options = {
   reply_markup: JSON.stringify({
     inline_keyboard: [
-      [{ text: 'Капучино', callback_data: 'Капучино' }],
-      [{ text: 'Эспрессо', callback_data: 'Эспрессо' }],
-      [{ text: 'Латте', callback_data: 'Латте' }]
+      [{ text: 'Капучино', callback_data: 'Капучино_120' }],
+      [{ text: 'Эспрессо', callback_data: 'Эспрессо_150' }],
+      [{ text: 'Латте', callback_data: 'Латте_70' }]
     ]
   })
 };
@@ -79,27 +79,26 @@ bot.onText(/\/start/, (msg) => {
 // Ответ от кнопок
 bot.on('callback_query', function (msg) {
   chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id; // Если сообщение отправлял пользователь, то свойство msg.chat.id, если же он кликал на кнопку, то msg.from.id
-  var answer = msg.data; // Делим ответ на две части, превратив в массив. Первый элемент номер вопроса, второй будет вариант ответа.
+  var product = msg.data.split('_');
+  var answer = product[0]; // Делим ответ на две части, превратив в массив. Первый элемент номер вопроса, второй будет вариант ответа.
+  var price = product[1];
   var status = con.query("SELECT status FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
     if (err) throw err;
-    //global.status = result[1].count;
-    //console.log(result[0].status);
     var status_check = result[0].status;
     if(status_check == 0){
       console.log('Its a 0');
-
-      var selected = con.query("SELECT coffee FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
+      var selected = con.query("SELECT coffee, price FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
         if (err) throw err;
         var enter = result[0].coffee + ' ' + answer;
-        var sql = "UPDATE coffee SET coffee = '"+enter+"', status = 1 WHERE chat_id = "+chat+"";
+        var full_price = result[0].price + parseFloat(price);
+        console.log(full_price);
+        var sql = "UPDATE coffee SET coffee = '"+enter+"', price = "+full_price+", status = 1 WHERE chat_id = "+chat+"";
         con.query(sql, function (err, result) {
           if (err) throw err;
           console.log(result.affectedRows + " record(s) updated");
         });
         bot.sendMessage(chat, "Ваш заказ: "+answer+". Желаете что-нибудь еще?", yesNo);
-          //console.log(result[0].coffee);
       });
-      //console.log(selected);
     }
     if(status_check == 1){
       if(answer == 'Да'){
@@ -120,7 +119,12 @@ bot.on('callback_query', function (msg) {
     }
     if(status_check == 3){
       if(answer == 'Да'){
-        bot.sendMessage(chat, "Ваш заказ: \nГде будете забирать?", places);
+        bot.sendMessage(chat, "Где будете забирать?", places);
+        var sql = "UPDATE coffee SET status = 4 WHERE chat_id = "+chat+"";
+        con.query(sql, function (err, result) {
+          if (err) throw err;
+          console.log(result.affectedRows + " record(s) updated");
+        });
       }else{
         var sql = "UPDATE coffee SET status = 2 WHERE chat_id = "+chat+"";
         con.query(sql, function (err, result) {
@@ -130,6 +134,17 @@ bot.on('callback_query', function (msg) {
         bot.sendMessage(chat, "Напишите, пожалуйста ваш телефон.");
       }
     }
+    if(status_check == 4){
+      var sql = "UPDATE coffee SET place = '"+answer+"', status = 5 WHERE chat_id = "+chat+"";
+      con.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log(result.affectedRows + " record(s) updated");
+      });
+      bot.sendMessage(chat, "Во сколько Вас ожидать?");
+    }
+    if(status_check == 6){
+      bot.sendMessage(chat, "Спасибо за заказ. Будем вас ждать!:)");
+    }
   });
   console.log(answer);
 });
@@ -137,28 +152,25 @@ bot.on('callback_query', function (msg) {
 
 bot.on('message', (msg) => {
   chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id; // Если сообщение отправлял пользователь, то свойство msg.chat.id, если же он кликал на кнопку, то msg.from.id
-  var status = con.query("SELECT status FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
-    if (err) throw err;
-    var statusch = result[0].status;
-    if(statusch == 2){
-      bot.sendMessage(chat, "Ваш номер: "+msg.from.text+"?", yesNo);
-      var sql = "UPDATE coffee SET phone = "+msg.from.text+", status = 3 WHERE chat_id = "+chat+"";
-      con.query(sql, function (err, result) {
-        if (err) throw err;
-        console.log(result.affectedRows + " record(s) updated");
-      });
+  var status = con.query("SELECT status, price, place, coffee, time FROM coffee WHERE chat_id = "+chat+"", function (err, result, fields) {
+    if(result[0] !== undefined){
+      if(result[0].status == 2){
+        bot.sendMessage(chat, "Ваш номер: "+msg.text+"?", yesNo);
+        var sql = "UPDATE coffee SET phone = '"+msg.text+"', status = 3 WHERE chat_id = "+chat+"";
+        con.query(sql, function (err, result) {
+          if (err) throw err;
+          console.log(result.affectedRows + " record(s) updated");
+        });
+      }
+      if(result[0].status == 5){
+        console.log(result);
+        bot.sendMessage(chat, "Ваш заказ: "+result[0].coffee+" На общую сумму: "+result[0].price+"\nЗабирать по адресу: "+result[0].place+"\nВ "+result[0].time+".\nВсе верно?", yesNo);
+        var sql = "UPDATE coffee SET status = 6 WHERE chat_id = "+chat+"";
+        con.query(sql, function (err, result) {
+          if (err) throw err;
+          console.log(result.affectedRows + " record(s) updated");
+        });
+      }
     }
   });
 });
-
-bot.onText(/\хуй/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'сам хуй :)');
-});
-/*
-bot.on('message', (msg) => {
-  const chatId = msg.chat.id;
- 
-  bot.sendMessage(chatId, 'Received your message');
-});
-*/
