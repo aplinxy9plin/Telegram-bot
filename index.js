@@ -1,6 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
  
-const token = '';
+const token = '378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk';
  
 const bot = new TelegramBot(token, {polling: true});
  
@@ -170,9 +170,17 @@ bot.on('message', (msg) => {
           console.log(result.affectedRows + " record(s) updated");
         });
         bot.sendMessage(chat, "Ваш заказ: "+result[0].coffee+" На общую сумму: "+result[0].price+"\nЗабирать по адресу: "+result[0].place+"\nВ "+msg.text+".\nВсе верно?", yesNo);
-        bot.sendMessage('269874948', "Заказ #"+result[0].id+": "+result[0].coffee+" На общую сумму: "+result[0].price+"\nАдрес: "+result[0].place+"\nВ "+msg.text+".");
+        //bot.sendMessage('269874948', "Заказ #"+result[0].id+": "+result[0].coffee+" На общую сумму: "+result[0].price+"\nАдрес: "+result[0].place+"\nВ "+msg.text+".");
         //Admin id = 269874948
       }
+      /*if(result[0].status == 6){
+        bot.sendMessage(chat, "Ваш заказ поступил в обработку. У вас есть какие-то вопросы? Позвоните по телефону 12-34-56");
+      }*/
     }
+  });
+  bot.onText(/\/test/, (msg) => {
+    const chatId = msg.from.id;
+    console.log(chatId);
+    bot.sendMessage(chatId, 'Привет :)\nВыбери кофе, который хочешь закать!', options);
   });
 });
