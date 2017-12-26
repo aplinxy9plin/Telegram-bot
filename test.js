@@ -1,54 +1,101 @@
-const TelegramBot = require('node-telegram-bot-api');
- 
-const token = '378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk';
- 
-const bot = new TelegramBot(token, {polling: true});
+const Telegraf = require('telegraf')
+const Extra = require('telegraf/extra')
+const Markup = require('telegraf/markup')
 
-const products = [
-    {
-        name: 'Nuka-Cola Quantum',
-        price: 27.99,
-        description: 'Ice-cold, radioactive Nuka-Cola. Very rare!',
-        photoUrl: 'http://vignette2.wikia.nocookie.net/fallout/images/e/e6/Fallout4_Nuka_Cola_Quantum.png'
-    },
-    {
-        name: 'Iguana on a Stick',
-        price: 3.99,
-        description: 'The wasteland\'s most famous delicacy.',
-        photoUrl: 'https://vignette2.wikia.nocookie.net/fallout/images/b/b9/Iguana_on_a_stick.png'
-    }
-];
+const bot = new Telegraf('378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk')
 
-function createInvoice(product) {
-    return {
-        provider_token: '401643678:TEST:346a812e-92be-4324-8410-7b77f92896ac',
-        start_parameter: 'foo',
-        title: product.name,
-        description: product.description,
-        currency: 'EUR',
-        photo_url: product.photoUrl,
-        is_flexible: false,
-        need_shipping_address: false,
-        prices: [{ label: product.name, amount: Math.trunc(product.price * 100) }],
-        payload: {}
-    };
-}
+bot.use(Telegraf.log())
 
-bot.onText(/\qwe/, (msg, match) => {
-  //console.log(msg);    
-  const opts = {
-    reply_to_message_id: msg.message_id,
-    reply_markup: JSON.stringify({
-      keyboard: [
-        ['Yes, you are the bot of my life ❤'],
-        ['No, sorry there is another one...']
-      ]
+bot.command('onetime', ({ reply }) =>
+  reply('One time keyboard', Markup
+    .keyboard(['/simple', '/inline', '/pyramid'])
+    .oneTime()
+    .resize()
+    .extra()
+  )
+)
+
+bot.command('custom', ({ reply }) => {
+  return reply('Custom buttons keyboard', Markup
+    .keyboard([
+      ['🔍 Search', '😎 Popular'], // Row1 with 2 buttons
+      ['☸ Setting', '📞 Feedback'], // Row2 with 2 buttons
+      ['📢 Ads', '⭐️ Rate us', '👥 Share'] // Row3 with 3 buttons
+    ])
+    .oneTime()
+    .resize()
+    .extra()
+  )
+})
+
+bot.hears('🔍 Search', ctx => ctx.reply('Yay!'))
+bot.hears('📢 Ads', ctx => ctx.reply('Free hugs. Call now!'))
+
+bot.command('special', (ctx) => {
+  return ctx.reply('Special buttons keyboard', Extra.markup((markup) => {
+    return markup.resize()
+      .keyboard([
+        markup.contactRequestButton('Send contact'),
+        markup.locationRequestButton('Send location')
+      ])
+  }))
+})
+
+bot.command('pyramid', (ctx) => {
+  return ctx.reply('Keyboard wrap', Extra.markup(
+    Markup.keyboard(['one', 'two', 'three', 'four', 'five', 'six'], {
+      wrap: (btn, index, currentRow) => currentRow.length >= (index + 1) / 2
     })
-  };
-  bot.sendMessage(msg.chat.id, 'Do you love me?', opts);
-  //bot.sendInvoice(msg.chat.id, "title", "description", "payload", "401643678:TEST:346a812e-92be-4324-8410-7b77f92896ac", "startParameter", "USD", "100")
-});
-// Matches /editable
-bot.onText(/\asd/, function onEditableText(msg) {
-  bot.sendMessage(msg.from.id, createInvoice(products[1]), opts);
-});
+  ))
+})
+
+bot.command('simple', (ctx) => {
+  return ctx.replyWithHTML('<b>Coke</b> or <i>Pepsi?</i>', Extra.markup(
+    Markup.keyboard(['Coke', 'Pepsi'])
+  ))
+})
+
+bot.command('inline', (ctx) => {
+  /*return ctx.reply('<b>Coke</b> or <i>Pepsi?</i>', Extra.HTML().markup((m) =>
+    m.inlineKeyboard([
+      m.callbackButton('Coke', 'test1123'),
+      m.callbackButton('Pepsi', 'Pepsi')
+    ])))*/
+    ctx.reply('text', Markup
+        .keyboard([
+          ('test')
+        ])
+        .oneTime()
+        .resize()
+        .extra()
+        .callbackButton('Coke', 'test1123')
+    )
+})
+
+bot.command('random', (ctx) => {
+  return ctx.reply('random example',
+    Markup.inlineKeyboard([
+      Markup.callbackButton('Coke', 'Coke'),
+      Markup.callbackButton('Dr Pepper', 'Dr Pepper', Math.random() > 0.5),
+      Markup.callbackButton('Pepsi', 'Pepsi')
+    ]).extra()
+  )
+})
+
+bot.hears(/\/wrap (\d+)/, (ctx) => {
+  return ctx.reply('Keyboard wrap', Extra.markup(
+    Markup.keyboard(['one', 'two', 'three', 'four', 'five', 'six'], {
+      columns: parseInt(ctx.match[1])
+    })
+  ))
+})
+
+bot.action('Dr Pepper', (ctx, next) => {
+  return ctx.reply('👍').then(() => next())
+})
+
+bot.action(/.+/, (ctx) => {
+  return ctx.answerCbQuery(`Oh, ${ctx.match[0]}! Great choice`)
+})
+
+bot.startPolling()
