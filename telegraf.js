@@ -35,16 +35,17 @@ const shippingOptions = [
   }
 ]
 
+const black = ['Американо 100₽','Двойной 100₽','Черный кофе с можевельником 100₽','Черный кофе с кардамоном 100₽']
+const classic = ['Маленький латте 100₽','Большой латте 200₽','Маленький Капучино 100₽','Большой Капучино 200₽','Раф 100₽','Флэт вайт 100₽','Соевый латте малый 100₽','Соевый латте большой 200₽']
+const author = ['Лавандовый раф 100₽','Розовый мужской латте 100₽','Медово-имбирный капучино 100₽','Коколатте 100₽','Имбирно-жасминовый латте 100₽','Кедровый латте маленький 100₽','Кедровый латте большой 200₽','Цитрусовый раф маленький 100₽','Цитрусовый раф большой 200₽','Клауд ЧСМ маленький 100₽','Клауд ЧСМ большой 200₽','Крем брюле маленький 100₽','Крем брюле большой 200₽','Прованский латте 100₽','Грушевая самбука 100₽']
+const chocolate = ['Горячий шоколад с зефирками 100₽','Какао 100₽','Какао с зефирками 100₽','Ягодный напиток:брусника с мятой 100₽','Ягодный напиток: облипиха с можевельником 100₽']
+const alternative =['Колдбрю 100₽','Пуровер (V60) 100₽','Кемекс 100₽','Аэропресс 100₽']
 const replyOptions = Markup.inlineKeyboard([
   Markup.payButton('💸 Buy'),
   Markup.urlButton('❤️', 'http://telegraf.js.org')
 ]).extra()
 
 const bot = new Telegraf('378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk')
-/*bot.start(({ replyWithInvoice }) =>{
- replyWithInvoice(invoice)
- //console.log(getChat())
-})*/
 bot.start((ctx) => {
   var query = con.query("SELECT chat_id, status FROM coffee WHERE chat_id = "+ctx.from.id+"", function (err, result, fields) {
     if (err) throw err;
@@ -56,31 +57,14 @@ bot.start((ctx) => {
         if (err) throw err;
         console.log("User recorded to database");
       });
+      ctx.reply('Привет, для начала использования напиши мне /start')
     }else{
-      console.log('Not empty');
+      var array = ['Черный кофе','Классический c молоком','Авторские','Альтернативный кофе','Горячий шоколад, какао и ягодные',''];
+      hard_keyboard(ctx, 'Меню:', array);
+      console.log('Сделать заказ')
+      updateStatus(1,ctx.from.id)
     }
-    if(result[0].status == '10'){
-        ctx.reply('Custom buttons keyboard', Markup
-            .keyboard([
-              ['Оплата'], // Row1 with 2 buttons
-              ['Время'], // Row2 with 2 buttons
-              ['Удалить/изменить','Дозаказ'] // Row3 with 3 buttons
-            ])
-            .oneTime()
-            .resize()
-            .extra()
-        )
-    }else{
-       ctx.reply('Custom buttons keyboard', Markup
-            .keyboard([
-              ['Сделать заказ']
-            ])
-            .oneTime()
-            .resize()
-            .extra()
-        ) 
-    }
-    })
+  })
 })
 bot.command('/buy', ({ replyWithInvoice }) => replyWithInvoice(invoice, replyOptions))
 bot.on('pre_checkout_query', ({ answerPreCheckoutQuery }) => answerPreCheckoutQuery(true))
@@ -90,11 +74,11 @@ bot.on('successful_payment', (ctx) => {
 })
 bot.on('message', (ctx) => {
     var chat_id = ctx.from.id;
-    var query = con.query("SELECT chat_id, status, coffee FROM coffee WHERE chat_id = "+chat_id+"", function (err, result, fields) {
+    var query = con.query("SELECT chat_id, status, coffee, price FROM coffee WHERE chat_id = "+chat_id+"", function (err, result, fields) {
         if (err) throw err;
         var status = result[0].status;
         var answer = ctx.message.text
-        var replace = result[0].coffee.split(' ').join('\n')
+        var replace = result[0].coffee.split('$').join('\n')
         //console.log(replace)
         if(answer == 'Сделать заказ'){
             var array = ['Черный кофе','Классический c молоком','Авторские','Альтернативный кофе','Горячий шоколад, какао и ягодные',''];
@@ -104,19 +88,23 @@ bot.on('message', (ctx) => {
         }        
         if(status == 1){
             if(answer == 'Черный кофе'){
-                easy_keyboard(ctx, 'Черный кофе', ['Американо','Двойной','Черный кофе с можевельником','Черный кофе с кардамоном'])
+                easy_keyboard(ctx, 'Черный кофе', black)
                 updateStatus(2, chat_id)
             }
             if(answer == 'Классический c молоком'){
-                easy_keyboard(ctx, 'Классический c молоком', ['Маленький латте','Большой латте','Маленький Капучино','Большой Капучино','Раф','Флэт вайт','Соевый латте малый','Соевый латте большой'])
+                easy_keyboard(ctx, 'Классический c молоком', classic)
                 updateStatus(2, chat_id)
             }
             if(answer == 'Авторские'){
-                easy_keyboard(ctx, 'Авторские', ['Лавандовый раф','Розовый мужской латте','Медово-имбирный капучино','Коколатте','Имбирно-жасминовый латте','Кедровый латте маленький','Кедровый латте большой','Цитрусовый раф маленький','Цитрусовый раф большой','Клауд ЧСМ маленький','Клауд ЧСМ большой','Крем брюле маленький','Крем брюле большой','Прованский латте','Грушевая самбука'])
+                easy_keyboard(ctx, 'Авторские', author)
                 updateStatus(2, chat_id)
             }
             if(answer == 'Альтернативный кофе'){
-                easy_keyboard(ctx, 'Авторские', ['Лавандовый раф','Розовый мужской латте','Медово-имбирный капучино','Коколатте','Имбирно-жасминовый латте','Кедровый латте маленький','Кедровый латте большой','Цитрусовый раф маленький','Цитрусовый раф большой','Клауд ЧСМ маленький','Клауд ЧСМ большой','Крем брюле маленький','Крем брюле большой','Прованский латте','Грушевая самбука'])
+                easy_keyboard(ctx, 'Альтернативный кофе', alternative)
+                updateStatus(2, chat_id)
+            }
+            if(answer == 'Горячий шоколад, какао и ягодные'){
+                easy_keyboard(ctx, 'Горячий шоколад, какао и ягодные', chocolate)
                 updateStatus(2, chat_id)
             }
         }
@@ -128,18 +116,37 @@ bot.on('message', (ctx) => {
             }
             if(answer == 'Закончить'){
                 ctx.reply('Через сколько минут вас ожидать?\nНапишите цифру')
+                //easy_keyboard(ctx, 'Выберите добавку.',['Сирип 1','Сироп 2','Сироп 3','Спасибо, ничего'])
                 updateStatus(3, chat_id)
             }
             if(answer !== 'Выбрать еще' && answer !== 'Закончить'){
                 easy_keyboard(ctx, 'Вы выбрали: '+answer+'', ['Выбрать еще', 'Закончить',''])
-                var enter = result[0].coffee + ' ' + answer
-                var sql = "UPDATE coffee SET coffee = '"+enter+"' WHERE chat_id = "+chat_id+"";
+                var enter = result[0].coffee + ' ' + answer + '$'
+                var price = result[0].price + parseInt(retnum(answer), 10)
+                var sql = "UPDATE coffee SET coffee = '"+enter+"', price = "+price+" WHERE chat_id = "+chat_id+"";
                 con.query(sql, function (err, result) {
                   if (err) throw err;
                   console.log(result.affectedRows + " record(s) updated");
                 });
             }
         }
+        /*if(status == 17){
+            easy_keyboard(ctx, 'Вы выбрали '+answer+'\nВыберите добавку.',['Сирип 1','Сироп 2','Сироп 3','Спасибо, ничего'])
+            updateStatus(17,chat_id)
+            else{
+                updateStatus(3,chat_id)
+                ctx.reply('Вы выбрали '+answer+'\nЧерез сколько минут вас ожидать?\nНапишите цифру')
+            }
+        }
+        if(status == 18){
+            easy_keyboard(ctx, 'Вы выбрали: '+answer+'', ['Выбрать еще', 'Закончить',''])
+            if(answer == 'Спасибо, ничего'){
+                updateStatus(3,chat_id)
+            }else{
+                updateStatus(3,chat_id)
+            easy_keyboard(ctx, 'Вы выбрали '+answer+'\nЧерез сколько минут вас ожидать?\nНапишите цифру', ['Выбрать еще', 'Закончить',''])
+            }
+        }*/
         if(status == 3){
             if (!isNaN(answer)) {
                 easy_keyboard(ctx,'Ожидать вас через '+answer+' минут?',['Да','Нет',''])
@@ -159,15 +166,14 @@ bot.on('message', (ctx) => {
         }
         if(status == 5){
             if(answer == 'Оплата'){
-                //var order = (result[0].coffee).split(' ').join("\n");
-                ctx.replyWithInvoice(invoice_func(replace,100000))
+                ctx.replyWithInvoice(invoice_func(replace,parseInt(result[0].price, 10)*100))
             }
             if(answer == 'Изменить время'){
                 ctx.reply('Через сколько минут вас ожидать?\nНапишите цифру')
                 updateStatus(3,chat_id)
             }
             if(answer == 'Удалить/изменить'){
-                var order = result[0].coffee.split(' ')
+                var order = result[0].coffee.split('$')
                 easy_keyboard(ctx,'Чтобы удалить какой-то товар просто нажмите на него на клавиатуре.',order)
                 updateStatus(6, chat_id)
             }
@@ -179,21 +185,28 @@ bot.on('message', (ctx) => {
         }
         // Удалить или изменить
         if(status == 6){
-            var order = result[0].coffee.split(' ')
-            order.splice(0, 1);
+            var order = result[0].coffee.split('$')
             for (var i = 0; i < order.length; i++) {
-                if(answer == order[i]){
+                //console.log(order[i]+'\n')
+                if(' '+answer == order[i]){
                     order.splice(i, 1)
-                    console.log()
-                    var sql = "UPDATE coffee SET coffee = '"+order.join(" ")+"', status = 5 WHERE chat_id = "+chat_id+"";
+                    //console.log(order)
+                    var sql = "UPDATE coffee SET coffee = '"+order.join("$")+"', status = 5 WHERE chat_id = "+chat_id+"";
                         con.query(sql, function (err, result) {
                         if (err) throw err;
                         console.log('Товар удален');
                     });
                     hard_keyboard(ctx,'Товар удален', ['Оплата','','Изменить время','','Удалить/изменить','Дозаказ'])
+                    if((order.length - 1) == 0){
+                        var array = ['Черный кофе','Классический c молоком','Авторские','Альтернативный кофе','Горячий шоколад, какао и ягодные',''];
+                        hard_keyboard(ctx, 'Ваш заказ пуст. Выберите что-нибудь!', array);
+                        updateStatus(1, chat_id);
+                        console.log('Сделать заказ')
+                    }
                     break
                 }
             }
+            console.log(order)
         }
     })
 })
@@ -259,6 +272,10 @@ function invoice_func(order, price){
       }
     }
     return invoice
+}
+function retnum(str) { 
+    var num = str.replace(/[^0-9]/g, '')
+    return num
 }
 
 bot.startPolling()
