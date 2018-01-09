@@ -45,7 +45,7 @@ const replyOptions = Markup.inlineKeyboard([
   Markup.urlButton('❤️', 'http://telegraf.js.org')
 ]).extra()
 
-const bot = new Telegraf('378976409:AAGnz9MmrNIJTATv6TFNYe_kg12liaLusMk')
+const bot = new Telegraf('')
 bot.start((ctx) => {
   var query = con.query("SELECT chat_id, status FROM coffee WHERE chat_id = "+ctx.from.id+"", function (err, result, fields) {
     if (err) throw err;
